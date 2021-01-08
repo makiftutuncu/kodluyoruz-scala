@@ -232,10 +232,13 @@ Cake.celebrateWith(fruitCake)
 #### 2.5.3. Absrtract Class and Trait
 
 ```scala
+// Can have primary constructor like a regular class
+// Can be extended only once via `extends`
 abstract class Pide() {
   def eat(): Unit
 }
 
+// Interface on steroids, cannot have a constructor (yet)
 trait Meaty {
   val meat: String
 }
@@ -244,6 +247,7 @@ trait Cheesy {
   val cheese: String
 }
 
+// First extend via `extends`, then mix-in via `with`
 case class CheesyMeatPide(override val meat: String,
                           override val cheese: String) extends Pide() with Meaty with Cheesy {
   val name: String = s"$meat pide with $cheese cheese"
@@ -266,7 +270,102 @@ VegetarianPide.eat()
 
 #### 2.6.1. Array, List, Set, Map
 
-TODO
+```scala
+// Array construction, `Array[Int]` is inferred
+val numbers = Array(1, 2, 3)
+
+// Access an index
+println(numbers(1))
+
+// Update an index
+numbers(0) = 2
+numbers.update(2, 5)
+
+// Classic foreach-style loop
+for (i <- numbers) {
+  println(i)
+}
+
+// Functional way of side-effecting loop
+numbers.foreach { i =>
+  println(i)
+}
+```
+
+```scala
+// List construction, `List[Int]` is inferred
+val scores = List(37, 83)
+
+// `head :: tail` style list construction, ends with `Nil` (empty List)
+val names = "Mehmet" :: "Akif" :: Nil
+
+// Prepending via `+:` and getting a new list, List is immutable
+val moreNames = "Ali" +: names
+
+// Appending via `:+`, addition happens where `+` is
+val evenMoreNames = moreNames :+ "Veli"
+
+// Apply some operations, like a pipeline and get new values
+val someUpperCaseNames = evenMoreNames.filter(name => name.length > 3).map(_.toUpperCase)
+
+// Access via application (`apply` method)
+println(someUpperCaseNames(0))
+
+// Pattern matching against a List
+someUpperCaseNames match {
+  case "MEHMET" :: nextName :: _ =>
+    // Ignoring tail via `_`
+    // Matching first element to a literal
+    // Matching second to a named value, `nextName` is inferred as `String`
+    println(s"First name was MEHMET and the next is $nextName")
+  case _ =>
+    println("Pattern did not match")
+}
+```
+
+```scala
+// Set creation, `Set[String]` is inferred
+val initialWords = Set("hello", "world")
+
+val newWords = "Damn! World failed."
+  .replaceAll("[^\\w]", " ") // Replace anything not a letter with space
+  .split(" ")                // Split from spaces into an Array
+  .filterNot(_.isEmpty)      // Remove empty Strings
+  .map(_.toLowerCase)        // Lowercase words
+  .toSet                     // Convert the Array to a Set
+
+// Set union, won't add "world" again
+val allWords = initialWords ++ newWords
+
+if (allWords.contains("damn")) {
+  println("Watch your language!")
+}
+```
+
+```scala
+// Map creation, `Map[Char, Int]` is inferred
+val romanNumerals = Map(
+  'I' -> 1, // Syntax sugar for `Tuple2`
+  'V' -> 5,
+  'X' -> 10,
+  'L' -> 50,
+  'C' -> 100,
+  'D' -> 500,
+  'M' -> 1000
+)
+
+def convert(romanNumeralType: Char): Int =
+  if (!romanNumerals.contains(romanNumeralType)) {
+    -1
+  } else {
+    // Access directly by key (via `apply`)
+    // Use with caution. If key doesn't exist, it will throw an exception.
+    romanNumerals(romanNumeralType)
+  }
+
+println(s"X: ${convert('X')}")
+println(s"A: ${convert('A')}")
+```
 
 #### 2.6.2. Option
 
