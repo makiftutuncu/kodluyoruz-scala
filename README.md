@@ -1,6 +1,7 @@
 ## Kodluyoruz Scala
 
 ### Mehmet Akif Tütüncü
+
 Scala since 2014
 Now: [Numbrs](https://numbrs.com)
 Before: [sahibinden.com](https://sahibinden.com), [VNGRS](https://vngrs.com), Linovi
@@ -48,7 +49,7 @@ object Application {
 
 ```scala
 // A variable of type `String`
-var variableMessage: String = = "test"
+var variableMessage: String = "test"
 
 // Can be reassigned
 variableMessage = "test 2"
@@ -242,13 +243,16 @@ someUpperCaseNames match {
 }
 
 // Folding starts with a value, uses that value and current item while iterating over
-// List("0: 1", "1: 2", ..., "4: 5")
-val strings = (1 to 5).toList.zipWithIndex.foldLeft("") {
-  // Since we used `zipWithIndex`, each item is a Tuple as `(index, value)`
-  // We are destructing the tuple in the pattern match to use both values
-  case (result, (index, number)) =>
-    result += s"$index: $number"
-}
+// For a `List[A]`, signature is `foldLeft(b: B)(f: A => B): B`
+val string =
+  (1 to 5).toList
+          // List[Int]
+          .zipWithIndex
+          // List[(Int, Int)]
+          .map { case (number, index) => s"$index: $number" }
+          // List[String]
+          .foldLeft("") { case (result, value) => result + s"$value, " }
+          // String
 ```
 
 ```scala
