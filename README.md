@@ -580,3 +580,140 @@ CheesyMeatPide("ground beef", "white cheddar").eat()
 
 VegetarianPide.eat()
 ```
+
+#### 2.6.4. Enumerations
+
+```scala
+// Standard Scala enumeration (not the recommended way)
+// It will contain an inner `Value` type.
+object Color extends Enumeration {
+  // This weird thing generates `Value` instances
+  // for these values during compilation
+  val Red, Green, Blue = Value
+}
+
+println(Color.values)            // Color.ValueSet(Red, Green, Blue)
+println(Color.Blue.id)           // 2
+println(Color.withName("Green")) // Green
+
+object RGB extends Enumeration {
+  // You can extend `Value` to add more fields to each item
+  case class Val(override val id: Int, code: Char) extends Value
+
+  // We instantiate them ourselves in this case.
+  val Red   = Val(0, 'r')
+  val Green = Val(1, 'g')
+  val Blue  = Val(2, 'b')
+}
+
+println(Color.Blue.code) // b
+
+def describe(color: RGB.Val): String =
+  color match {
+    case RGB.Red  => "red"
+    case RGB.Blue => "blue"
+  }
+
+// This will fail with `MatchError` in runtime!
+println(describe(RGB.Green))
+```
+
+```scala
+// Sealed means `Color` cannot be extended outside this file.
+// In other words, all possible subtypes of this type is known.
+// It will also help compiler in exhaustivity checks of pattern matches.
+sealed trait Color
+
+object Color {
+  // Regular inheritance, need single instances so they are `object`s
+  // We want to benefit from generated methods so we also use `case`
+  case object Red   extends Color
+  case object Green extends Color
+  case object Blue  extends Color
+
+  // This is optional but it's a good idea to have it avaliable
+  val values: List[Color] = List(Red, Green, Blue)
+}
+
+// Custom type for enum items
+sealed abstract class Auth(val anonymous: Boolean)
+
+object Auth {
+  // Can have multiple instances since it's a regular class
+  case class  UserPass(user: String, pass: String) extends Auth(false)
+  case class  Token(token: String)                 extends Auth(false)
+  case object Guest                                extends Auth(true)
+}
+
+def getSecret(credentials: Auth): Either[String, Int] =
+  credentials match {
+    // Match to a pattern and add conditions if needed
+    case Auth.UserPass("admin", pass) if pass != "@dM1n" =>
+      Left("Incorrect username/password")
+
+    case Auth.Token("1234abc") =>
+      Left("Expired token")
+
+    // Can match against type and give name to value of that type
+    case a: Guest =>
+    	Left("Need authorization")
+
+    // Can destruct and match against fields (and ignore some)
+    // Also give a name the matched pattern via `@`
+    // Here `a` is of `Auth.UserPass` type, not just `Auth`
+    case a @ Auth.UserPass(user, _) =>
+      println(s"Accessing secret as $user")
+      Right(42)
+
+    // Can match against type and not care about name of the value
+    case _: Auth.Token =>
+      println(s"Accessing secret as an API with token")
+      Right(42)
+    
+    // If this pattern match did not cover all cases (not exhaustive),
+    // compiler will warn because `Auth` is a sealed type.
+    // In such a case, add `case _ =>` or handle all possible cases.
+  }
+
+// Left(Need authorization)
+println(getSecret(Auth.Guest))
+
+// Left(Expired token)
+println(getSecret(Auth.Token("1234abc")))
+
+// Right(42)
+println(getSecret(Auth.Token("test")))
+
+// Right(Incorrect username/password)
+println(getSecret(Auth.UserPass("admin", "admin")))
+
+// Right(42)
+println(getSecret(Auth.UserPass("admin", "@dM1n")))
+```
+
+## 3. More on Scala
+
+### 3.1. Generics
+
+```scala
+// TODO
+```
+
+### 3.2. Higher Order Functions, Currying, Recursion
+
+```scala
+// TODO
+```
+
+### 3.3. Implicits
+
+```scala
+// TODO
+```
+
+### 3.4. More on Collections
+
+```scala
+// TODO
+```
+
