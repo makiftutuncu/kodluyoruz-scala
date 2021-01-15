@@ -734,7 +734,7 @@ idOf(UnitModel)
 
 // Method returns a function
 def urlBuilder(secure: Boolean, domain: String): (String, String) => String = {
-  val schema = if (ssl) "https://" else "http://"
+  val schema = if (secure) "https://" else "http://"
   
   // Function to be returned
   (path: String, query: String) => s"$schema$domain/$path?$query"
