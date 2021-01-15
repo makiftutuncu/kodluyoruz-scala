@@ -1,11 +1,11 @@
-## Kodluyoruz Scala
+# Kodluyoruz Scala
 
-### Mehmet Akif Tütüncü
+## Mehmet Akif Tütüncü
 
-Scala since 2014
-Now: [Numbrs](https://numbrs.com)
-Before: [sahibinden.com](https://sahibinden.com), [VNGRS](https://vngrs.com), Linovi
-Contact: [akif.dev](https://akif.dev)
+* Scala since 2014
+* Now: [Numbrs](https://numbrs.com)
+* Before: [sahibinden.com](https://sahibinden.com), [VNGRS](https://vngrs.com), Linovi
+* Contact: [akif.dev](https://akif.dev)
 
 ## 1. Functional Programming
 
@@ -696,46 +696,129 @@ println(getSecret(Auth.UserPass("admin", "@dM1n")))
 ### 3.1. Generics
 
 ```scala
-// TODO
+// `I` is called a type parameter of `Model`
+trait Model[I] {
+  val id: I
+}
+
+abstract class Message[M] {
+  val content: M
+}
+
+case class TextMessage(override val id: Int,
+                       override val content: String) extends Message[String]
+                                                        with Model[Int]
+
+case object UnitModel extends Model[Unit] {
+  override val id: Unit = ()
+}
+
+// `M` has a constraint, `M` must be a subtype of `Model[I]`
+// Subtype relation is denoted with `<:`
+// There is also its counterpart supertype constaint `>:`
+def idOf[M <: Model[Int]](model: M): Int = model.id
+
+val message = TextMessage(1, "Hello")
+
+// Method type parameter is inferred from parameter
+println(idOf(message)) // 1
+
+// Will not work because `UnitModel` is not a `Model[Int]`
+idOf(UnitModel)
 ```
 
-### 3.2. Higher Order Functions, Currying, Recursion
+### 3.2. Higher Order Functions, Currying, Partially Applied Functions
+
+```scala
+// Example from: https://docs.scala-lang.org/tour/higher-order-functions.html
+
+// Method returns a function
+def urlBuilder(secure: Boolean, domain: String): (String, String) => String = {
+  val schema = if (ssl) "https://" else "http://"
+  
+  // Function to be returned
+  (path: String, query: String) => s"$schema$domain/$path?$query"
+}
+
+// Function literal of type `(String, String) => String`
+val getUrl = urlBuilder(secure = true, "google.com")
+
+// https://google.com/search?q=scala
+val url = getUrl("search", "q=scala")
+```
+
+```scala
+def convert(int: Int): String = int.toString
+
+// Becomes a function literal of type `Int => String` when argument is not given
+// Also called partially applied function
+val converter = convert _
+
+// `fold` has 2 parameter groups, it's also called a curried function
+// Think of each parameter group as the input of next parameter group
+//
+// So type of `fold` is
+// `(List[A], B) => ((B, A) => B) => B`
+//
+// When first parameter group is given it becomes
+// `((B, A) => B) => B`
+//
+// When second parameter group is given it becomes
+// `B`
+def fold[A, B](list: List[A], initial: B)(operation: (B, A) => B): B = {
+  var result: B = initial
+  for (a <- list) {
+    result = operation(result, a)
+  }
+  result
+}
+
+// A function literal
+val appender: (String, Int) => String = (s, i) => s + i.toString
+
+// Second parameter group of `fold` is not given
+// So it becomes a function literal, requiring the value of first parameter group as an input
+val looper: ((String, Int) => String) => String = fold((1 to 5).toList, "")
+
+// Apply the missing parameter (which is another function)
+println(looper(appender))
+
+// Notice second parameter group is written with {} as it is a function
+// Type parameters of `fold` are both inferred to be `Int` here
+println(fold((1 to 5).toList, 0) { (result, int) => result + int }) // 15
+```
+
+### 3.3. More on Collections
 
 ```scala
 // TODO
 ```
 
-### 3.3. Implicits
+### 3.4. Implicits
 
 ```scala
 // TODO
 ```
 
-### 3.4. More on Collections
+### 3.5 Future
 
 ```scala
 // TODO
 ```
 
-#### 3.4 Future
+### 3.6. Concurrency
 
 ```scala
 // TODO
 ```
 
-#### 3.5. Concurrency
+### 3.7. Laziness
 
 ```scala
 // TODO
 ```
 
-#### 3.6. Laziness
-
-```scala
-// TODO
-```
-
-#### 3.7. Typeclasses
+### 3.8. Typeclasses
 
 ```scala
 // TODO
