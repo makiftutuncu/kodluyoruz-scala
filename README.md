@@ -717,3 +717,27 @@ println(getSecret(Auth.UserPass("admin", "@dM1n")))
 // TODO
 ```
 
+#### 3.4 Future
+
+```scala
+// TODO
+```
+
+#### 3.5. Concurrency
+
+```scala
+// TODO
+```
+
+#### 3.6. Laziness
+
+```scala
+// TODO
+```
+
+#### 3.7. Typeclasses
+
+```scala
+// TODO
+```
+
