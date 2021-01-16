@@ -933,14 +933,14 @@ def fib(n: Int): Int =
 
 /*
 fib(4) =
-  fib(3) + fib(2) =
-    fib(2) + fib(1) + fib(2) =
-      fib(1) + fib(0) + fib(2) =
-      1 + 0 + fib(2) =
-    1 + fib(2) =
-      1 + fib(1) + fib(0) =
-        1 + 1 + 0 =
-        2
+fib(3) + fib(2) =
+fib(2) + fib(1) + fib(2) =
+fib(1) + fib(0) + fib(2) =
+1 + 0 + fib(2) =
+1 + fib(2) =
+1 + fib(1) + fib(0) =
+1 + 1 + 0 =
+2
 */
 ```
 
@@ -950,8 +950,12 @@ import scala.annotation.tailrec
 // Regular recursion
 def recSum(list: List[Int]): Int =
   list match {
-    case Nil          => 0
-    case head :: tail => head + recSum(tail) // recursive call is not in tail position
+    case Nil =>
+      0
+
+    case head :: tail =>
+      // recursive call is not in tail position
+      head + recSum(tail)
   }
 
 def tailRecSum(list: List[Int]): Int = {
@@ -960,8 +964,12 @@ def tailRecSum(list: List[Int]): Int = {
   @tailrec
   def step(l: List[Int], result: Int): Int =
     l match {
-      case Nil          => result
-      case head :: tail => step(tail, result + head) // recursive call is in tail position
+      case Nil =>
+        result
+
+      case head :: tail =>
+        // recursive call is in tail position (only thing is the recursive call)
+        step(tail, result + head)
     }
 
   // Start stepping with entire list and 0 as sum
@@ -972,28 +980,147 @@ def tailRecSum(list: List[Int]): Int = {
 ### 3.5. Implicits
 
 ```scala
-// TODO
+class Logger {
+  def log(value: Any): Unit = println(value)
+}
+
+val logger = new Logger
+
+def add(a: Int, b: Int, logger: Logger): Int = {
+  logger.log("a = " + a)
+  logger.log("b = " + b)
+  val result = a + b
+  logger.log("result = " + result)
+  result
+}
+
+add(2, 3, logger)
 ```
 
-### 3.6 Future
+```scala
+class Logger {
+  def log(value: Any): Unit = println(value)
+}
+
+// Marking the value as implicit
+// so any request to an implicit `Logger` can access this
+implicit val logger = new Logger
+
+// Moved `logger` into separate parameter group
+// and marked it as `implicit` so it is searched in current scope.
+//
+// If there is no `Logger` instance marked as implicit in current scope,
+// it won't compile.
+def add(a: Int, b: Int)(implicit logger: Logger): Int = {
+  logger.log("a = " + a)
+  logger.log("b = " + b)
+  val result = a + b
+  logger.log("result = " + result)
+  result
+}
+
+// Not passing logger explicitly, it is being passed implicitly.
+// Since implicit parameter is in a separate parameter group,
+// we can call the method as if it doesn't have a second parameter group.
+add(2, 3)
+
+add(4, 5)(anotherLogger) // can still be provided explicitly
+
+// `implicitly` method captures implicit instance of given type
+implicitly[Logger].log("test")
+```
+
+```scala
+trait Show[A] {
+  def show(a: A): String
+}
+
+// new Show[Int] { override def show(a: Int): String = a.toString }
+// { a: Int => a.toString }
+// { _.toString }
+implicit val intShow: Show[Int] = _.toString
+
+def show1[A](a: A)(implicit s: Show[A]): String = s.show(a)
+
+println(show1(42)) // 42
+
+// Will not compile because there is no implicit `Show[String]` in scope
+println(show1("42"))
+
+// `A: Show` is called a context bound.
+// It means there should be an implicit `Show[A]` in the context (scope) .
+def show2[A: Show](a: A): String = implicitly[Show[A]].show(a)
+```
+
+### 3.6. Laziness
+
+```scala
+// This will not be evaluated until it is referenced.
+lazy val x: String = {
+  println("Initializing x")
+  "hello"
+}
+
+val y: String = "world"
+
+println(y)
+// world
+
+println(x)
+// Initializing x
+// hello
+
+println(x)
+// hello
+```
+
+```scala
+sealed abstract class LogLevel(val id: Int)
+object LogLevel {
+  case object Debug extends LogLevel(1)
+  case object Warn  extends LogLevel(2)
+  case object Error extends LogLevel(3)
+}
+
+class Logger(val level: LogLevel) {
+  // Writing `=> A` instead of `A` makes the parameter lazy.
+  // Unless `value` is referenced, it will not be evaluated.
+  // Think of it like a function taking no parameters
+  // so it doesn't produce the value until it is called.
+  //
+  // In this case, it will only be evaluated if it is actually going to be logged
+  def debug(value: => Any): Unit = if (enabled(LogLevel.Debug)) { println(value) }
+  
+  def warn(value: => Any): Unit = if (enabled(LogLevel.Warn)) { println(value) }
+  
+  def error(value: => Any): Unit = if (enabled(LogLevel.Error)) { println(value) }
+  
+  private def enabled(l: LogLevel): Boolean = l.id >= level.id
+}
+
+val errorLogger = new Logger(LogLevel.Error)
+
+def getValue(): String = {
+  println("Getting value")
+  "test"
+}
+
+// Prints nothing because `errorLogger` won't log at debug level
+// Therefore argument `getValue()` won't be evaluated (because it is marked as lazy)
+errorLogger.debug(getValue())
+
+// Getting value
+// test
+errorLogger.error(getValue())
+```
+
+### 3.7 Future and Concurrency
 
 ```scala
 // TODO
 ```
 
-### 3.7. Concurrency
-
-```scala
-// TODO
-```
-
-### 3.8. Laziness
-
-```scala
-// TODO
-```
-
-### 3.9. Typeclasses
+### 3.8. Typeclasses
 
 ```scala
 // TODO
