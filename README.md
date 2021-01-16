@@ -913,10 +913,61 @@ List.empty[Int].slice(3 ,5) // List()
 
 ### 3.4. Recursion
 
+To understand recursion, you must first understand recursion.
+
+https://www.google.com/search?q=recursion
+
 ```scala
-// TODO
+def fib(n: Int): Int =
+  if (n < 0) {
+    // Base case where recursion needs to stop (no recursive call)
+    0
+  } else if (n == 1) {
+    // Base case where recursion needs to stop (no recursive call)
+    1
+  } else {
+    // Recursive case where function calls itself
+    // i.e. represents itself with a combination of smaller problems
+    fib(n - 1) + fib(n - 2)
+  }
+
+/*
+fib(4) =
+  fib(3) + fib(2) =
+    fib(2) + fib(1) + fib(2) =
+      fib(1) + fib(0) + fib(2) =
+      1 + 0 + fib(2) =
+    1 + fib(2) =
+      1 + fib(1) + fib(0) =
+        1 + 1 + 0 =
+        2
+*/
 ```
 
+```scala
+import scala.annotation.tailrec
+
+// Regular recursion
+def recSum(list: List[Int]): Int =
+  list match {
+    case Nil          => 0
+    case head :: tail => head + recSum(tail) // recursive call is not in tail position
+  }
+
+def tailRecSum(list: List[Int]): Int = {
+  // Method inside method
+  // Annotated with `@tailrec` so compiler will optimize this into a regular loop
+  @tailrec
+  def step(l: List[Int], result: Int): Int =
+    l match {
+      case Nil          => result
+      case head :: tail => step(tail, result + head) // recursive call is in tail position
+    }
+
+  // Start stepping with entire list and 0 as sum
+  step(list, 0)
+}
+```
 
 ### 3.5. Implicits
 
