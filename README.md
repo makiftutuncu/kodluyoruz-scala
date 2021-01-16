@@ -581,7 +581,7 @@ CheesyMeatPide("ground beef", "white cheddar").eat()
 VegetarianPide.eat()
 ```
 
-#### 2.6.4. Enumerations
+#### 2.6.4. Enumerations and Algebraic Data Types (ADT)
 
 ```scala
 // Standard Scala enumeration (not the recommended way)
@@ -598,17 +598,19 @@ println(Color.withName("Green")) // Green
 
 object RGB extends Enumeration {
   // You can extend `Value` to add more fields to each item
-  case class Val(override val id: Int, code: Char) extends Value
+  case class CustomVal(override val id: Int, code: Char) extends Value
 
   // We instantiate them ourselves in this case.
-  val Red   = Val(0, 'r')
-  val Green = Val(1, 'g')
-  val Blue  = Val(2, 'b')
+  val Red   = CustomVal(0, 'r')
+  val Green = CustomVal(1, 'g')
+  val Blue  = CustomVal(2, 'b')
+  
+  override def values: RGB.ValueSet = RGB.ValueSet(Red, Green, Blue)
 }
 
-println(Color.Blue.code) // b
+println(RGB.Blue.code) // b
 
-def describe(color: RGB.Val): String =
+def describe(color: RGB.CustomVal): String =
   color match {
     case RGB.Red  => "red"
     case RGB.Blue => "blue"
@@ -655,7 +657,7 @@ def getSecret(credentials: Auth): Either[String, Int] =
       Left("Expired token")
 
     // Can match against type and give name to value of that type
-    case a: Guest =>
+    case Auth.Guest =>
     	Left("Need authorization")
 
     // Can destruct and match against fields (and ignore some)
@@ -721,6 +723,7 @@ def idOf[M <: Model[Int]](model: M): Int = model.id
 val message = TextMessage(1, "Hello")
 
 // Method type parameter is inferred from parameter
+// Explicit version: `idOf[TextMessage](message)`
 println(idOf(message)) // 1
 
 // Will not work because `UnitModel` is not a `Model[Int]`
@@ -741,6 +744,7 @@ def urlBuilder(secure: Boolean, domain: String): (String, String) => String = {
 }
 
 // Function literal of type `(String, String) => String`
+// (path: String, query: String) => s"https://google.com/$path?$query"
 val getUrl = urlBuilder(secure = true, "google.com")
 
 // https://google.com/search?q=scala
@@ -778,47 +782,167 @@ val appender: (String, Int) => String = (s, i) => s + i.toString
 
 // Second parameter group of `fold` is not given
 // So it becomes a function literal, requiring the value of first parameter group as an input
-val looper: ((String, Int) => String) => String = fold((1 to 5).toList, "")
+val looper: ((String, Int) => String) => String = fold[Int, String]((1 to 5).toList, "")
 
 // Apply the missing parameter (which is another function)
-println(looper(appender))
+println(looper(appender)) // "12345"
 
 // Notice second parameter group is written with {} as it is a function
 // Type parameters of `fold` are both inferred to be `Int` here
-println(fold((1 to 5).toList, 0) { (result, int) => result + int }) // 15
+//
+// fold((1 to 5).toList, 0)((result, int) => result + int)
+//
+// fold((1 to 5).toList, 0)(_ + _)
+println(
+  fold((1 to 5).toList, 0) { (result, int) =>
+    result + int
+  }
+) // 15
 ```
 
 ### 3.3. More on Collections
 
 ```scala
-// TODO
+val list = (1 to 100 by 2).toList // List(1, 3, 5, ..., 97, 99)
+
+list.head                  // 1
+List.empty[Int].head       // throws exception
+
+list.headOption            // Some(1)
+List.empty[Int].headOption // None
+
+list.last                  // 99
+List.empty[Int].last       // throws exception
+
+list.lastOption            // Some(99)
+List.empty[Int].lastOption // None
+
+list.tail            // List(3, 5, ..., 97, 99)
+List(1).tail         // List()
+List.empty[Int].tail // List()
+
+list.mkString                            // 135...9799
+list.mkString("-")                       // 1-3-5...-97-99
+list.mkString("[", ", ", "]")            // [1, 3, ..., 97, 99]
+List.empty[Int].mkString("[", ", ", "]") // []
+
+list.isEmpty  // false
+list.nonEmpty // true
+
+list.contains(3) // true
+list.contains(4) // false
+
+list.exists(i => i * 2 == 46)            // true
+List.empty[Int].exists(i => i * 2 == 46) // false
+
+list.forall(_ > 0)             // true
+list.forall(_ > 10)            // false
+List.empty[Int].forall(_ > 10) // true
+
+list.find(_ * 2 == 46) // Some(23)
+list.find(_ * 2 == 3)  // None
+
+list.filter(_ > 90) // List(91, 93, 95, 97, 99)
+
+list.filterNot(_ > 10) // List(1, 3, 5, 7, 9)
+
+// On a `List[A]`, `map` takes `A => B` and returns `List[B]`
+val listOfList: List[List[Int]] = list.map(i => List(i - 1, i)) // List(List(0, 1), List(2, 3), ...)
+
+listOfList.flatten // List(0, 1, 2, 3, ..., 99)
+
+// On a `List[A]`, `flatMap` takes `A => List[B]` and returns `List[B]`
+// flatMap = map + flatten
+list.flatMap(i => List(i - 1, i)) // List(0, 1, 2, 3, ..., 99)
+
+// Same as `reduce`
+// On a `List[A]`, `reduce` takes `(A, A) => A` and returns `A`
+list.reduceLeft((i, j) => i + j)  // 2500
+List.empty[Int].reduceLeft(_ + _) // throws an exception
+
+list.reduceLeftOption(_ + _)            // Some(2500)
+List.empty[Int].reduceLeftOption(_ + _) // None
+
+// Same as `fold`
+list.foldLeft("")((acc, i) => acc + i)            // "1357...9799"
+List.empty[Int].foldLeft("")((acc, i) => acc + i) // ""
+
+list.foldRight("")((i, acc) => acc + i)           // "9997...531"
+List.empty[Int].foldLeft("")((acc, i) => acc + i) // ""
+
+// Same as `list.filter(_ > 90).map(_ % 10)`
+list.collect {
+  case i if i > 90 =>
+    i % 10
+}
+// List(1, 3, 5, 7, 9)
+
+// Same as `list.find(_ > 90).map(_ % 10)`
+list.collectFirst {
+  case i if i > 90 =>
+    i % 10
+}
+// Some(1)
+
+list.collectFirst {
+  case i if i > 100 =>
+    i % 10
+}
+// None
+
+list.foreach(i => println(i))
+
+list.drop(3)      // List(7, 9, 11, ..., 97, 99)
+list.dropRight(3) // List(1, 3, 5, ..., 91, 93)
+
+list.take(3)      // List(1, 3, 5)
+list.takeRight(3) // List(95, 97, 99)
+
+list.takeWhile(_ < 10) // List(1, 3, 5, 7)
+
+// On a `List[Int]`, `partition` takes `Int => Boolean` and returns `(List[Int], List[Int])`
+list.partition(_ < 50) // (List(1, 3, ..., 47, 49), List(51, 53, ..., 97, 99))
+
+list.span(_ < 50) // (List(1, 3, 5, 7, 9, 11, ..., 47, 49), List(51, 53, ..., 97, 99))
+
+list.reverse // List(99, 97, ..., 3, 1)
+
+list.slice(3, 5)            // List(7, 9)
+List.empty[Int].slice(3 ,5) // List()
 ```
 
-### 3.4. Implicits
+### 3.4. Recursion
 
 ```scala
 // TODO
 ```
 
-### 3.5 Future
+
+### 3.5. Implicits
 
 ```scala
 // TODO
 ```
 
-### 3.6. Concurrency
+### 3.6 Future
 
 ```scala
 // TODO
 ```
 
-### 3.7. Laziness
+### 3.7. Concurrency
 
 ```scala
 // TODO
 ```
 
-### 3.8. Typeclasses
+### 3.8. Laziness
+
+```scala
+// TODO
+```
+
+### 3.9. Typeclasses
 
 ```scala
 // TODO
